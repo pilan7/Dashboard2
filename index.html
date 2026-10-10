@@ -181,7 +181,7 @@
   var SHEET_ID     = "1uNJ1JqjcHdCpi4YVe1gjIxBFPPfoNgCiel-_rh1YR7w";
   var DEFAULT_PAGE = "ראשי";                 // שורות ללא ערך בעמודה A שייכות לעמוד הזה
   var GVIZ_URL     = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json";
-  var CACHE_KEY    = "PEREZ_DASHBOARD_DATA_V2";
+  var CACHE_KEY    = "PEREZ_DASHBOARD_DATA_V3";
   var PAGE_KEY     = "PEREZ_DASHBOARD_LAST_PAGE";
   var FETCH_TIMEOUT_MS = 8000;
   var REFRESH_THROTTLE_MS = 30000;
@@ -240,7 +240,7 @@
         category: category,
         title: title,
         url: url,
-        open: (state === "" || state === "פתוח" || state === "open")   // מצב התחלתי של השורה
+        open: (state === "פתוח" || state === "open")   // ברירת מחדל: סגור. רק "פתוח" פותח
       });
     });
     return items;
@@ -261,7 +261,7 @@
       var g = p.map[it.category];
       if (!g) { g = p.map[it.category] = { name: it.category, links: [], open: false }; p.groups.push(g); }
       g.links.push(it);
-      if (it.open) g.open = true;   // מספיק שורה אחת ריקה/"פתוח" כדי לפתוח את הקטגוריה
+      if (it.open) g.open = true;   // מספיק שורה אחת עם "פתוח" כדי לפתוח את הקטגוריה
     });
     return { pages: pages, byPage: byPage };
   }
