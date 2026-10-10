@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#173b5e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Perez">
+<title>דשבורד פרץ</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+  :root {
+    --navy: #173b5e;
+    --navy-hover: #21507d;
+    --card-bg: #f7f9fa;
+    --card-border: #e2e8f0;
+    --chip-border: #cfd8dc;
+    --text: #1e293b;
+    --muted: #64748b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: #ffffff;
+    color: var(--text);
+    direction: rtl;
+    text-align: right;
+    min-height: 100vh;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* ---------- סרגל עליון ---------- */
+  .topbar {
+    position: sticky; top: 0; z-index: 20;
+    background: #ffffff;
+    border-bottom: 1px solid var(--card-border);
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .topbar-inner {
+    display: flex; align-items: center; gap: 14px;
+    padding: 6px 14px;
+    min-height: 54px;
+  }
+  .logo { height: 36px; width: auto; display: block; flex: none; }
+  .nav {
+    display: flex; align-items: stretch; gap: 2px;
+    flex: 1 1 auto; min-width: 0;
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav a {
+    display: inline-flex; align-items: center;
+    padding: 8px 12px; white-space: nowrap;
+    color: #334155; text-decoration: none; font-size: .92rem; font-weight: 500;
+    border-bottom: 3px solid transparent;
+    border-radius: 6px 6px 0 0;
+  }
+  .nav a:hover { background: #f1f5f9; }
+  .nav a[aria-current="page"] { color: var(--navy); font-weight: 700; border-bottom-color: var(--navy); }
+  .status { font-size: .72rem; color: var(--muted); white-space: nowrap; flex: none; }
+  .status.offline { color: #b45309; }
+  .icon-btn {
+    flex: none; width: 38px; height: 38px; border-radius: 50%;
+    border: 1px solid transparent; background: transparent; color: var(--navy);
+    display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+  }
+  .icon-btn:hover, .icon-btn[aria-expanded="true"] { background: #eef2f6; }
+  .icon-btn svg { width: 20px; height: 20px; }
+
+  /* ---------- חיפוש בתוכן ---------- */
+  .search-panel { display: none; border-top: 1px solid var(--card-border); background: #fbfcfd; padding: 10px 14px 12px; }
+  .search-panel.open { display: block; }
+  .search-row { display: flex; gap: 8px; max-width: 640px; }
+  .search-row input {
+    flex: 1; min-width: 0; padding: 9px 14px; font-size: 1rem; /* 16px+ מונע זום ב-iOS */
+    border: 1px solid #cbd5e1; border-radius: 8px; outline: none; background: #fff; direction: rtl;
+  }
+  .search-row input:focus { border-color: var(--navy); }
+  .search-close { border: none; background: transparent; color: var(--muted); font-size: .85rem; cursor: pointer; padding: 0 6px; }
+  .results { max-width: 640px; margin-top: 8px; max-height: 55vh; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+  .result {
+    display: block; text-decoration: none; color: var(--text);
+    background: #fff; border: 1px solid var(--card-border); border-radius: 6px; padding: 7px 10px;
+  }
+  .result:hover, .result:focus { background: #eef2f6; outline: none; }
+  .result .r-title { font-size: .92rem; font-weight: 600; }
+  .result .r-path { font-size: .74rem; color: var(--muted); margin-top: 1px; }
+  .no-results { font-size: .88rem; color: var(--muted); padding: 6px 2px; }
+
+  /* ---------- כפתורים מהירים ---------- */
+  main { padding: 12px 14px 24px; }
+  .quick-bar {
+    display: none; flex-wrap: wrap; gap: 6px;
+    margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--card-border);
+  }
+  .quick-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    background: #ffffff; color: #1e3a5f !important; text-decoration: none;
+    font-size: .84rem; font-weight: 500; padding: 5px 13px;
+    border-radius: 999px; border: 1px solid var(--chip-border);
+    box-shadow: 0 1px 2px rgba(0,0,0,.03);
+    transition: background .15s ease, border-color .15s ease;
+    cursor: pointer; white-space: nowrap;
+  }
+  .quick-btn:hover { background: #f1f5f9; border-color: #94a3b8; }
+
+  /* ---------- עמודות ואקורדיונים ---------- */
+  .columns-wrapper { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; justify-content: flex-start; }
+  .card { flex: 0 0 195px; width: 195px; background: #fff; border: 1px solid var(--card-border); border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
+  .card-header {
+    width: 100%; background: var(--navy); color: #fff; border: none;
+    font: inherit; font-size: .92rem; font-weight: 700; text-align: right;
+    padding: 9px 12px; cursor: pointer; user-select: none;
+    display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  }
+  .card-header:hover { background: var(--navy-hover); }
+  .card-header .title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .toggle-icon { font-size: .72rem; flex: none; }
+  .card.collapsed .card-links { display: none; }
+  .card-links { padding: 8px; display: flex; flex-direction: column; gap: 5px; }
+  .card-links a {
+    display: block; text-align: center; text-decoration: none; color: var(--text);
+    background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 5px;
+    font-size: .85rem; padding: 7px 8px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    transition: background .15s ease, border-color .15s ease, box-shadow .15s ease;
+  }
+  .card-links a:hover { background: #e9eef3; border-color: #cbd5e1; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .card-text-item {
+    display: block; text-align: center; color: var(--navy);
+    font-size: .9rem; font-weight: 700; padding: 8px 6px 3px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .card-text-item:not(:first-child) { margin-top: 4px; border-top: 1px solid var(--card-border); }
+  .message { width: 100%; font-size: .95rem; color: var(--muted); padding: 28px 10px; text-align: center; }
+
+  @media (max-width: 440px) {
+    .columns-wrapper { gap: 8px; }
+    .card { flex: 1 1 calc(50% - 4px); width: auto; min-width: 0; }
+    .status { display: none; }
+    .topbar-inner { gap: 8px; padding: 6px 10px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <img class="logo" src="logo.png" alt="Perez">
+    <nav class="nav" id="nav" aria-label="עמודים"></nav>
+    <span class="status" id="status" aria-live="polite"></span>
+    <button class="icon-btn" id="searchBtn" type="button" aria-label="חיפוש בתוכן הדשבורד" aria-expanded="false" aria-controls="searchPanel">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </button>
+  </div>
+  <div class="search-panel" id="searchPanel">
+    <div class="search-row">
+      <input type="search" id="searchInput" placeholder="חיפוש בכל הקישורים בדשבורד..." autocomplete="off" enterkeyhint="search">
+      <button class="search-close" id="searchClose" type="button">סגור</button>
+    </div>
+    <div class="results" id="results"></div>
+  </div>
+</header>
+
+<main>
+  <div id="quick-bar" class="quick-bar"></div>
+  <div id="dashboard" class="columns-wrapper">
+    <div class="message">טוען נתונים...</div>
+  </div>
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ================= הגדרות ================= */
+  var SHEET_ID     = "1uNJ1JqjcHdCpi4YVe1gjIxBFPPfoNgCiel-_rh1YR7w";
+  var DEFAULT_PAGE = "ראשי";                 // שורות ללא ערך בעמודה A שייכות לעמוד הזה
+  var GVIZ_URL     = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json";
+  var CACHE_KEY    = "PEREZ_DASHBOARD_DATA_V2";
+  var PAGE_KEY     = "PEREZ_DASHBOARD_LAST_PAGE";
+  var FETCH_TIMEOUT_MS = 8000;
+  var REFRESH_THROTTLE_MS = 30000;
+  var QUICK_CATEGORIES = ["כפתורים", "לחצנים", "כפתור"];
+
+  /* ================= עזרים ================= */
+  function $(id) { return document.getElementById(id); }
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+  function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+
+  function safeUrl(u) {
+    u = (u || "").trim();
+    if (!u) return "";
+    if (/^[a-z][a-z0-9+.\-]*:/i.test(u)) {
+      return /^(https?:|mailto:|tel:)/i.test(u) ? u : "";   // חוסם javascript: וכו'
+    }
+    return "https://" + u;
+  }
+
+  /* ================= פענוח הגיליון ================= */
+  function cell(r, i) {
+    var c = r.c && r.c[i];
+    return c && c.v != null ? String(c.v).trim() : "";
+  }
+
+  function parseGViz(text) {
+    var start = text.indexOf("{"), end = text.lastIndexOf("}");
+    if (start < 0 || end < 0) throw new Error("bad response");
+    var data = JSON.parse(text.substring(start, end + 1));
+    if (data.status === "error" || !data.table) throw new Error("sheet error");
+
+    var items = [];
+    data.table.rows.forEach(function (r) {
+      if (!r || !r.c) return;
+      var page     = cell(r, 0);
+      var category = cell(r, 1);
+      var title    = cell(r, 2);
+      var url      = safeUrl(cell(r, 3));
+      var active   = cell(r, 4).toLowerCase();
+      var state    = cell(r, 5).toLowerCase();
+
+      // שורת כותרת של הגיליון (אם gviz לא זיהה אותה)
+      if (page === "עמוד" || category === "קטגוריה" || title === "שם הקישור") return;
+      // עמודה E: מציגים רק "כן" (או ריק). כל ערך אחר = לא להציג
+      if (!(active === "" || active === "כן" || active === "true" || active === "yes")) return;
+      if (!category || !title) return;
+
+      items.push({
+        page: page || DEFAULT_PAGE,
+        category: category,
+        title: title,
+        url: url,
+        open: (state === "" || state === "פתוח" || state === "open")   // מצב התחלתי של השורה
+      });
+    });
+    return items;
+  }
+
+  /* ================= מודל ================= */
+  var items = [];          // הנתונים הנוכחיים (כל העמודים)
+  var lastSig = "";        // לזיהוי שינוי אמיתי ומניעת ריצודים
+  var currentPage = "";
+  var openOverride = {};   // מצב פתיחה שהמשתמש שינה בעצמו (נשמר בין רענונים ברקע)
+
+  function buildModel() {
+    var pages = [], byPage = {};
+    items.forEach(function (it) {
+      if (!byPage[it.page]) { byPage[it.page] = { chips: [], groups: [], map: {} }; pages.push(it.page); }
+      var p = byPage[it.page];
+      if (QUICK_CATEGORIES.indexOf(it.category) !== -1) { p.chips.push(it); return; }
+      var g = p.map[it.category];
+      if (!g) { g = p.map[it.category] = { name: it.category, links: [], open: false }; p.groups.push(g); }
+      g.links.push(it);
+      if (it.open) g.open = true;   // מספיק שורה אחת ריקה/"פתוח" כדי לפתוח את הקטגוריה
+    });
+    return { pages: pages, byPage: byPage };
+  }
+
+  /* ================= תצוגה ================= */
+  function renderNav(model) {
+    var nav = $("nav");
+    nav.textContent = "";
+    model.pages.forEach(function (name) {
+      var a = el("a", "", name);
+      a.href = "#" + encodeURIComponent(name);
+      if (name === currentPage) a.setAttribute("aria-current", "page");
+      nav.appendChild(a);
+    });
+    var active = nav.querySelector('[aria-current="page"]');
+    if (active && active.scrollIntoView) { try { active.scrollIntoView({ inline: "nearest", block: "nearest" }); } catch (e) {} }
+  }
+
+  function renderQuick(chips) {
+    var bar = $("quick-bar");
+    bar.textContent = "";
+    var count = 0;
+    chips.forEach(function (c) {
+      var a = el("a", "quick-btn");
+      var isSearch = c.title.indexOf("חיפוש") !== -1 || c.title.toLowerCase().indexOf("search") !== -1;
+      if (isSearch) {
+        a.textContent = "🔍 " + c.title;
+        a.href = "search-drive.html";     // חיפוש ב-Drive: נפתח בדף נפרד
+        a.target = "_blank";
+        a.rel = "noopener";
+      } else if (c.url) {
+        a.textContent = c.title;
+        a.href = c.url; a.target = "_blank"; a.rel = "noopener";
+      } else { return; }
+      bar.appendChild(a); count++;
+    });
+    bar.style.display = count ? "flex" : "none";
+  }
+
+  function createCard(pageName, g) {
+    var key = pageName + "\u0001" + g.name;
+    var isOpen = key in openOverride ? openOverride[key] : g.open;
+
+    var card = el("div", "card" + (isOpen ? "" : " collapsed"));
+    var header = el("button", "card-header");
+    header.type = "button";
+    header.setAttribute("aria-expanded", String(isOpen));
+    var t = el("span", "title", g.name);
+    var icon = el("span", "toggle-icon", isOpen ? "▼" : "◀");
+    header.appendChild(t); header.appendChild(icon);
+
+    var list = el("div", "card-links");
+    g.links.forEach(function (l) {
+      if (l.url) {
+        var a = el("a", "", l.title);
+        a.href = l.url; a.target = "_blank"; a.rel = "noopener"; a.title = l.title;
+        list.appendChild(a);
+      } else {
+        list.appendChild(el("span", "card-text-item", l.title));
+      }
+    });
+
+    header.addEventListener("click", function () {
+      var nowCollapsed = card.classList.toggle("collapsed");
+      openOverride[key] = !nowCollapsed;
+      header.setAttribute("aria-expanded", String(!nowCollapsed));
+      icon.textContent = nowCollapsed ? "◀" : "▼";
+    });
+
+    card.appendChild(header); card.appendChild(list);
+    return card;
+  }
+
+  function render() {
+    var model = buildModel();
+    if (!model.pages.length) { return; }
+
+    // בחירת עמוד: hash > עמוד אחרון > ראשון
+    var fromHash = "";
+    try { fromHash = decodeURIComponent((location.hash || "").slice(1)); } catch (e) {}
+    var wanted = fromHash || lsGet(PAGE_KEY) || "";
+    currentPage = model.byPage[wanted] ? wanted : model.pages[0];
+
+    renderNav(model);
+    var p = model.byPage[currentPage];
+    renderQuick(p.chips);
+
+    var container = $("dashboard");
+    container.textContent = "";
+    if (!p.groups.length) {
+      container.appendChild(el("div", "message", "אין פריטים להצגה בעמוד זה."));
+    } else {
+      var frag = document.createDocumentFragment();
+      p.groups.forEach(function (g) { frag.appendChild(createCard(currentPage, g)); });
+      container.appendChild(frag);
+    }
+    document.title = currentPage + " · דשבורד פרץ";
+  }
+
+  function showMessage(text) {
+    $("quick-bar").style.display = "none";
+    $("dashboard").textContent = "";
+    $("dashboard").appendChild(el("div", "message", text));
+  }
+
+  /* ================= סטטוס ================= */
+  var lastSync = 0;
+  function fmtTime(ts) {
+    if (!ts) return "";
+    var d = new Date(ts), now = new Date();
+    var hm = d.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
+    if (d.toDateString() === now.toDateString()) return hm;
+    return d.toLocaleDateString("he-IL", { day: "numeric", month: "numeric" }) + " " + hm;
+  }
+  function setStatus(online) {
+    var s = $("status");
+    if (!lastSync) { s.textContent = ""; return; }
+    s.className = "status" + (online ? "" : " offline");
+    s.textContent = online ? "מעודכן " + fmtTime(lastSync) : "אופליין · נתונים מ-" + fmtTime(lastSync);
+  }
+
+  /* ================= טעינה: מטמון מיידי + עדכון שקט ================= */
+  function applyData(newItems, ts) {
+    var sig = JSON.stringify(newItems);
+    lastSync = ts || lastSync;
+    if (sig === lastSig) return false;
+    lastSig = sig;
+    items = newItems;
+    render();
+    return true;
+  }
+
+  // 1) הצגה מיידית ומסונכרנת מה-localStorage (לפני הציור הראשון)
+  var hadCache = false;
+  (function () {
+    var raw = lsGet(CACHE_KEY);
+    if (!raw) return;
+    try {
+      var obj = JSON.parse(raw);
+      if (obj && obj.items && obj.items.length) {
+        hadCache = true;
+        applyData(obj.items, obj.ts);
+        setStatus(navigator.onLine);
+      }
+    } catch (e) {}
+  })();
+
+  // 2) משיכה ברקע מה-Google Sheet
+  var lastRefresh = 0;
+  function refresh(force) {
+    var now = Date.now();
+    if (!force && now - lastRefresh < REFRESH_THROTTLE_MS) return;
+    lastRefresh = now;
+
+    var ctrl = ("AbortController" in window) ? new AbortController() : null;
+    var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, FETCH_TIMEOUT_MS) : null;
+
+    fetch(GVIZ_URL, ctrl ? { signal: ctrl.signal, cache: "no-store" } : { cache: "no-store" })
+      .then(function (res) { if (!res.ok) throw new Error("http " + res.status); return res.text(); })
+      .then(function (text) {
+        var fresh = parseGViz(text);
+        if (!fresh.length) throw new Error("empty");   // לא דורסים מטמון תקין בנתונים ריקים/שגויים
+        var ts = Date.now();
+        lsSet(CACHE_KEY, JSON.stringify({ ts: ts, items: fresh }));
+        applyData(fresh, ts);
+        setStatus(true);
+      })
+      .catch(function () {
+        if (!hadCache && !items.length) {
+          showMessage(navigator.onLine ? "שגיאה בטעינת הנתונים." : "אין חיבור לאינטרנט ועדיין אין נתונים שמורים. התחבר פעם אחת כדי לשמור אותם.");
+        } else {
+          setStatus(false);
+        }
+      })
+      .then(function () { if (timer) clearTimeout(timer); });
+  }
+  refresh(true);
+
+  window.addEventListener("online", function () { refresh(true); });
+  window.addEventListener("offline", function () { setStatus(false); });
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) refresh(false); });
+
+  /* ================= ניווט בין עמודים ================= */
+  window.addEventListener("hashchange", function () {
+    var name = "";
+    try { name = decodeURIComponent((location.hash || "").slice(1)); } catch (e) {}
+    if (name) lsSet(PAGE_KEY, name);
+    if (items.length) { render(); window.scrollTo(0, 0); }
+  });
+
+  /* ================= חיפוש בתוכן ================= */
+  var panel = $("searchPanel"), input = $("searchInput"), resultsEl = $("results"), btn = $("searchBtn");
+
+  function openSearch() {
+    panel.classList.add("open");
+    btn.setAttribute("aria-expanded", "true");
+    input.focus();
+    runSearch();
+  }
+  function closeSearch() {
+    panel.classList.remove("open");
+    btn.setAttribute("aria-expanded", "false");
+    input.value = "";
+    resultsEl.textContent = "";
+  }
+  function runSearch() {
+    var q = input.value.trim().toLowerCase();
+    resultsEl.textContent = "";
+    if (!q) return;
+    var tokens = q.split(/\s+/);
+    var found = items.filter(function (it) {
+      if (!it.url) return false;   // מפרידים/כותרות משנה לא נכללים בתוצאות
+      var hay = (it.title + " " + it.category + " " + it.page).toLowerCase();
+      return tokens.every(function (t) { return hay.indexOf(t) !== -1; });
+    });
+    if (!found.length) { resultsEl.appendChild(el("div", "no-results", "לא נמצאו תוצאות.")); return; }
+    found.slice(0, 60).forEach(function (it) {
+      var a = el("a", "result");
+      a.href = it.url; a.target = "_blank"; a.rel = "noopener";
+      a.appendChild(el("div", "r-title", it.title));
+      var isQuick = QUICK_CATEGORIES.indexOf(it.category) !== -1;
+      a.appendChild(el("div", "r-path", isQuick ? it.page : it.page + " › " + it.category));
+      resultsEl.appendChild(a);
+    });
+  }
+  btn.addEventListener("click", function () { panel.classList.contains("open") ? closeSearch() : openSearch(); });
+  $("searchClose").addEventListener("click", closeSearch);
+  input.addEventListener("input", runSearch);
+  input.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") { var first = resultsEl.querySelector("a.result"); if (first) window.open(first.href, "_blank", "noopener"); }
+    if (e.key === "ArrowDown") { var f = resultsEl.querySelector("a.result"); if (f) { e.preventDefault(); f.focus(); } }
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && panel.classList.contains("open")) closeSearch();
+    var tag = (document.activeElement && document.activeElement.tagName) || "";
+    if (e.key === "/" && tag !== "INPUT" && tag !== "TEXTAREA") { e.preventDefault(); openSearch(); }
+  });
+
+  /* ================= PWA: Service Worker ================= */
+  if ("serviceWorker" in navigator) {
+    var hadController = !!navigator.serviceWorker.controller;
+    var reloading = false;
+    function reloadOnce() {
+      if (reloading) return;
+      if (panel.classList.contains("open") && input.value) return;   // לא מפריעים באמצע חיפוש
+      reloading = true; location.reload();
+    }
+    navigator.serviceWorker.addEventListener("message", function (e) {
+      if (e.data && e.data.type === "shell-updated") reloadOnce();   // קוד חדש נשמר במטמון
+    });
+    navigator.serviceWorker.addEventListener("controllerchange", function () {
+      if (hadController) reloadOnce();                               // Service Worker חדש הופעל
+    });
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).catch(function () {});
+    });
+  }
+})();
+</script>
+</body>
+</html>

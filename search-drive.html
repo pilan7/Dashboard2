@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#173b5e">
+<title>חיפוש ב-Google Drive</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background: #f8fafc; padding: 25px 20px; direction: rtl; text-align: right; display: flex; justify-content: center; }
+  .box { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,.08); width: 100%; max-width: 580px; }
+  h2 { color: #173b5e; font-size: 1.15rem; margin-bottom: 16px; }
+  .row { display: flex; gap: 8px; margin-bottom: 14px; }
+  input[type="text"] { flex: 1; min-width: 0; padding: 10px 14px; font-size: 1rem; border: 1px solid #cbd5e1; border-radius: 6px; outline: none; }
+  input[type="text"]:focus { border-color: #173b5e; }
+  button { background: #173b5e; color: #fff; border: none; border-radius: 6px; padding: 10px 20px; font-size: .95rem; font-weight: 600; cursor: pointer; }
+  button:hover { background: #254670; }
+  .filters { display: flex; flex-wrap: wrap; gap: 16px; font-size: .86rem; color: #334155; align-items: center; }
+  select { padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; outline: none; cursor: pointer; }
+  label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; }
+  .offline { display: none; margin-top: 14px; font-size: .85rem; color: #92400e; background: #fef3c7; border-radius: 6px; padding: 8px 12px; }
+</style>
+</head>
+<body>
+<div class="box">
+  <h2>🔍 חיפוש קבצים ב-Google Drive</h2>
+  <form id="f">
+    <div class="row"><input type="text" id="q" placeholder="שם קובץ או מילת חיפוש..." autofocus><button type="submit">חפש</button></div>
+    <div class="filters">
+      <label>סוג:
+        <select id="type">
+          <option value="">הכל</option>
+          <option value="type:document">Docs</option>
+          <option value="type:spreadsheet">Sheets</option>
+          <option value="type:presentation">Slides</option>
+          <option value="type:pdf">PDF</option>
+          <option value="type:folder">תיקיות</option>
+        </select>
+      </label>
+      <label><input type="checkbox" id="own"> בבעלותי בלבד</label>
+      <label><input type="checkbox" id="star"> מסומן בכוכב</label>
+    </div>
+  </form>
+  <div class="offline" id="off">אין חיבור לאינטרנט – חיפוש ב-Drive דורש רשת.</div>
+</div>
+<script>
+  document.getElementById("f").addEventListener("submit", function (e) {
+    e.preventDefault();
+    if (!navigator.onLine) { document.getElementById("off").style.display = "block"; return; }
+    var q = document.getElementById("q").value.trim();
+    var t = document.getElementById("type").value;
+    var m = document.getElementById("own").checked ? "owner:me" : "";
+    var s = document.getElementById("star").checked ? "is:starred" : "";
+    window.location.href = "https://drive.google.com/drive/search?q=" + encodeURIComponent([q, t, m, s].filter(Boolean).join(" "));
+  });
+</script>
+</body>
+</html>
