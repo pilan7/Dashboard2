@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Perez">
-<title>דשבורד פרץ</title>
+<title>דשבורד פרז</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -138,6 +138,12 @@
   .card-text-item:not(:first-child) { margin-top: 4px; border-top: 1px solid var(--card-border); }
   .message { width: 100%; font-size: .95rem; color: var(--muted); padding: 28px 10px; text-align: center; }
 
+  /* ---------- תחתית: גרסה ואבחון ---------- */
+  .app-footer { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 14px; border-top: 1px solid var(--card-border); font-size: .74rem; color: var(--muted); }
+  .app-footer button { border: 1px solid var(--chip-border); background: #fff; color: var(--navy); font: inherit; border-radius: 999px; padding: 3px 11px; cursor: pointer; }
+  .diag { margin: 0 14px 20px; padding: 10px 12px; background: #f1f5f9; border: 1px solid var(--card-border); border-radius: 8px; font-size: .74rem; line-height: 1.5; white-space: pre-wrap; word-break: break-word; direction: rtl; text-align: right; }
+  .diag[hidden] { display: none; }
+
   @media (max-width: 440px) {
     .columns-wrapper { gap: 8px; }
     .card { flex: 1 1 calc(50% - 4px); width: auto; min-width: 0; }
@@ -173,15 +179,23 @@
   </div>
 </main>
 
+<footer class="app-footer">
+  <span id="verText"></span>
+  <button type="button" id="diagBtn">אבחון</button>
+  <button type="button" id="hardBtn">רענון מלא</button>
+</footer>
+<pre class="diag" id="diag" hidden></pre>
+
 <script>
 (function () {
   "use strict";
 
   /* ================= הגדרות ================= */
+  var APP_VERSION  = "3.1";
   var SHEET_ID     = "1uNJ1JqjcHdCpi4YVe1gjIxBFPPfoNgCiel-_rh1YR7w";
   var DEFAULT_PAGE = "ראשי";                 // שורות ללא ערך בעמודה A שייכות לעמוד הזה
   var GVIZ_URL     = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json";
-  var CACHE_KEY    = "PEREZ_DASHBOARD_DATA_V3";
+  var CACHE_KEY    = "PEREZ_DASHBOARD_DATA_V4";
   var PAGE_KEY     = "PEREZ_DASHBOARD_LAST_PAGE";
   var FETCH_TIMEOUT_MS = 8000;
   var REFRESH_THROTTLE_MS = 30000;
@@ -227,7 +241,8 @@
       var title    = cell(r, 2);
       var url      = safeUrl(cell(r, 3));
       var active   = cell(r, 4).toLowerCase();
-      var state    = cell(r, 5).toLowerCase();
+      var stateRaw = cell(r, 5);
+      var state    = stateRaw.toLowerCase();
 
       // שורת כותרת של הגיליון (אם gviz לא זיהה אותה)
       if (page === "עמוד" || category === "קטגוריה" || title === "שם הקישור") return;
@@ -240,6 +255,7 @@
         category: category,
         title: title,
         url: url,
+        st: stateRaw,
         open: (state === "פתוח" || state === "open")   // ברירת מחדל: סגור. רק "פתוח" פותח
       });
     });
@@ -259,8 +275,9 @@
       var p = byPage[it.page];
       if (QUICK_CATEGORIES.indexOf(it.category) !== -1) { p.chips.push(it); return; }
       var g = p.map[it.category];
-      if (!g) { g = p.map[it.category] = { name: it.category, links: [], open: false }; p.groups.push(g); }
+      if (!g) { g = p.map[it.category] = { name: it.category, links: [], open: false, states: [] }; p.groups.push(g); }
       g.links.push(it);
+      g.states.push(it.st);
       if (it.open) g.open = true;   // מספיק שורה אחת עם "פתוח" כדי לפתוח את הקטגוריה
     });
     return { pages: pages, byPage: byPage };
@@ -335,6 +352,8 @@
     return card;
   }
 
+  var lastModel = null;
+
   function render() {
     var model = buildModel();
     if (!model.pages.length) { return; }
@@ -358,7 +377,9 @@
       p.groups.forEach(function (g) { frag.appendChild(createCard(currentPage, g)); });
       container.appendChild(frag);
     }
-    document.title = currentPage + " · דשבורד פרץ";
+    document.title = currentPage + " · דשבורד פרז";
+    lastModel = model;
+    updateDiag();
   }
 
   function showMessage(text) {
@@ -500,6 +521,58 @@
     if (e.key === "/" && tag !== "INPUT" && tag !== "TEXTAREA") { e.preventDefault(); openSearch(); }
   });
 
+
+  /* ================= גרסה, אבחון ורענון מלא ================= */
+  function noop() {}
+  $("verText").textContent = "גרסה " + APP_VERSION;
+
+  function hardReload() {
+    var jobs = [];
+    if (window.caches) jobs.push(caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k); })); }));
+    if (navigator.serviceWorker) jobs.push(navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.map(function (r) { return r.unregister(); })); }));
+    Promise.all(jobs).catch(noop).then(function () { location.reload(); });
+  }
+
+  function updateDiag() {
+    var d = $("diag");
+    if (d.hidden) return;
+    var lines = [];
+    lines.push("גרסת קוד: " + APP_VERSION);
+    lines.push("Service Worker שולט בדף: " + (navigator.serviceWorker && navigator.serviceWorker.controller ? "כן" : "לא"));
+    lines.push("רוחב מסך: " + window.innerWidth + " | אונליין: " + navigator.onLine);
+    lines.push("עדכון נתונים אחרון: " + (lastSync ? fmtTime(lastSync) : "אין"));
+    lines.push("דפדפן: " + navigator.userAgent);
+    lines.push("");
+    lines.push("עמוד: " + currentPage + " — מה נקרא מעמודה F לכל קטגוריה:");
+    var p = lastModel && lastModel.byPage[currentPage];
+    if (p) p.groups.forEach(function (g) {
+      lines.push("• " + g.name + " → " + (g.open ? "פתוחה" : "סגורה") + "   F=" + JSON.stringify(g.states));
+    });
+    d.textContent = lines.join("\n");
+  }
+  $("diagBtn").addEventListener("click", function () { var d = $("diag"); d.hidden = !d.hidden; updateDiag(); });
+  $("hardBtn").addEventListener("click", hardReload);
+
+  // בדיקת גרסה מול השרת (עוקפת את ה-Service Worker); אם הקוד בשרת חדש יותר – ניקוי ורענון מלא
+  var lastVersionCheck = 0;
+  function checkVersion() {
+    var now = Date.now();
+    if (!window.fetch || now - lastVersionCheck < 20000) return;
+    lastVersionCheck = now;
+    fetch("index.html?sw-bypass=1&t=" + now, { cache: "no-store" })
+      .then(function (r) { return r.ok ? r.text() : ""; })
+      .then(function (t) {
+        var m = new RegExp("APP_VERSION" + "\\s*=\\s*\"([^\"]+)\"").exec(t);
+        if (m && m[1] !== APP_VERSION) {
+          var prev = parseInt(lsGet("PEREZ_HARD_RELOAD_TS") || "0", 10);
+          if (now - prev > 300000) { lsSet("PEREZ_HARD_RELOAD_TS", String(now)); hardReload(); }   // מגן מלולאות
+        }
+      })
+      .catch(noop);
+  }
+  setTimeout(checkVersion, 1500);
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) checkVersion(); });
+
   /* ================= PWA: Service Worker ================= */
   if ("serviceWorker" in navigator) {
     var hadController = !!navigator.serviceWorker.controller;
@@ -514,6 +587,9 @@
     });
     navigator.serviceWorker.addEventListener("controllerchange", function () {
       if (hadController) reloadOnce();                               // Service Worker חדש הופעל
+    });
+    document.addEventListener("visibilitychange", function () {
+      if (!document.hidden) navigator.serviceWorker.getRegistration().then(function (r) { if (r) r.update(); }).catch(function () {});
     });
     window.addEventListener("load", function () {
       navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).catch(function () {});

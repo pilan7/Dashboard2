@@ -1,4 +1,4 @@
-/* Service Worker – דשבורד פרץ
+/* Service Worker – דשבורד פרז
  * אסטרטגיה: Stale-While-Revalidate לקבצי האפליקציה.
  *  - תמיד מגיש מיד מהמטמון (טעינה מיידית + אופליין מלא).
  *  - ברקע מושך גרסה עדכנית מהשרת; אם הקוד השתנה – שומר ומודיע לדף לרענן.
@@ -6,7 +6,7 @@
  * שנה את CACHE_VERSION רק אם משנים את הלוגיקה של ה-Service Worker עצמו
  * או רוצים לאלץ ניקוי מלא של המטמון.
  */
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const CACHE = 'perez-dashboard-' + CACHE_VERSION;
 const SHELL = [
   './',
@@ -80,5 +80,6 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return; // בקשות ל-Google Sheets וכו' – ישירות לרשת
+  if (url.searchParams.has('sw-bypass')) return;       // בדיקת גרסה מול השרת – תמיד ישירות לרשת
   event.respondWith(staleWhileRevalidate(event));
 });
